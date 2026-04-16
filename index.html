@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Payroll Service Desk — Ticket Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #f4f3ef;
+    --surface: #ffffff;
+    --border: #e2e0d8;
+    --text: #1a1916;
+    --text-muted: #6b6860;
+    --accent: #2d4af0;
+    --accent-light: #eaedfd;
+    --warn: #d45a2a;
+    --warn-light: #fdf0eb;
+    --green: #1e8a5e;
+    --green-light: #e8f5f0;
+    --amber: #b07a10;
+    --amber-light: #fdf6e3;
+    --radius: 12px;
+    --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 14px;
+    line-height: 1.5;
+    min-height: 100vh;
+  }
+  header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 20px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  header h1 {
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+  }
+  header .subtitle {
+    font-size: 12px;
+    color: var(--text-muted);
+    font-family: 'DM Mono', monospace;
+    margin-top: 2px;
+  }
+  header .badge {
+    font-size: 11px;
+    font-family: 'DM Mono', monospace;
+    background: var(--accent-light);
+    color: var(--accent);
+    padding: 4px 10px;
+    border-radius: 20px;
+  }
+  .container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 28px 32px;
+  }
+  /* Metric row */
+  .metrics {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  .metric-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px 18px;
+    box-shadow: var(--shadow);
+  }
+  .metric-card .label {
+    font-size: 11px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 6px;
+    font-weight: 500;
+  }
+  .metric-card .value {
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    line-height: 1;
+  }
+  .metric-card .sub {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 4px;
+    font-family: 'DM Mono', monospace;
+  }
+  .metric-card.accent .value { color: var(--accent); }
+  .metric-card.warn .value { color: var(--warn); }
+  .metric-card.green .value { color: var(--green); }
+  .metric-card.amber .value { color: var(--amber); }
+
+  /* Grid layouts */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+  .grid-3 { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+  .grid-full { margin-bottom: 16px; }
+
+  /* Cards */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px 22px;
+    box-shadow: var(--shadow);
+  }
+  .card-title {
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--text-muted);
+    margin-bottom: 16px;
+  }
+
+  /* Status pills */
+  .pill {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 20px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-family: 'DM Mono', monospace;
+  }
+  .pill-delivered { background: var(--green-light); color: var(--green); }
+  .pill-open { background: var(--amber-light); color: var(--amber); }
+  .pill-wip { background: var(--accent-light); color: var(--accent); }
+  .pill-pending { background: #f0f0f0; color: #666; }
+  .pill-reopened { background: var(--warn-light); color: var(--warn); }
+  .pill-fast { background: var(--green-light); color: var(--green); }
+  .pill-blocked { background: var(--warn-light); color: var(--warn); }
+  .pill-slow { background: var(--amber-light); color: var(--amber); }
+
+  /* Country bar chart */
+  .country-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+  .country-row:last-child { margin-bottom: 0; }
+  .country-name {
+    width: 100px;
+    font-size: 13px;
+    flex-shrink: 0;
+  }
+  .bar-wrap {
+    flex: 1;
+    background: var(--bg);
+    border-radius: 4px;
+    height: 8px;
+    overflow: hidden;
+  }
+  .bar-fill {
+    height: 100%;
+    border-radius: 4px;
+    background: var(--accent);
+    transition: width 0.4s ease;
+  }
+  .bar-fill.warn { background: var(--warn); }
+  .bar-fill.green { background: var(--green); }
+  .country-count {
+    font-size: 12px;
+    font-family: 'DM Mono', monospace;
+    color: var(--text-muted);
+    width: 20px;
+    text-align: right;
+  }
+
+  /* Category rows */
+  .cat-row {
+    display: grid;
+    grid-template-columns: 160px 1fr 60px 60px 80px;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+  }
+  .cat-row:last-child { border-bottom: none; }
+  .cat-row .cat-name { font-weight: 500; }
+  .cat-bar-wrap {
+    background: var(--bg);
+    border-radius: 4px;
+    height: 6px;
+    overflow: hidden;
+  }
+  .cat-bar { height: 100%; border-radius: 4px; background: var(--accent); }
+  .cat-days { font-family: 'DM Mono', monospace; font-size: 12px; color: var(--text-muted); text-align: center; }
+  .cat-count { font-family: 'DM Mono', monospace; font-size: 12px; text-align: center; }
+
+  /* Resolution table */
+  .res-row {
+    display: grid;
+    grid-template-columns: 110px 1fr 80px 70px;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+  }
+  .res-row:last-child { border-bottom: none; }
+  .res-bar-wrap { background: var(--bg); border-radius: 4px; height: 6px; overflow: hidden; }
+  .res-bar { height: 100%; border-radius: 4px; }
+  .res-days { font-family: 'DM Mono', monospace; font-size: 12px; color: var(--text-muted); text-align: right; }
+
+  /* Sentiment */
+  .sentiment-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 10px;
+  }
+  .sentiment-label { width: 140px; font-size: 13px; flex-shrink: 0; }
+  .sentiment-bar-wrap { flex: 1; background: var(--bg); border-radius: 4px; height: 10px; overflow: hidden; }
+  .sentiment-bar { height: 100%; border-radius: 4px; }
+  .sentiment-pct { font-size: 12px; font-family: 'DM Mono', monospace; color: var(--text-muted); width: 36px; text-align: right; }
+
+  /* Observations */
+  .observations { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+  .obs-panel {
+    border-radius: var(--radius);
+    padding: 16px 18px;
+    border: 1px solid;
+  }
+  .obs-panel.red { background: var(--warn-light); border-color: #f5c8b4; }
+  .obs-panel.green { background: var(--green-light); border-color: #b8ddd0; }
+  .obs-panel.blue { background: var(--accent-light); border-color: #c2ccf9; }
+  .obs-panel .obs-title {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 10px;
+  }
+  .obs-panel.red .obs-title { color: var(--warn); }
+  .obs-panel.green .obs-title { color: var(--green); }
+  .obs-panel.blue .obs-title { color: var(--accent); }
+  .obs-item {
+    font-size: 12.5px;
+    line-height: 1.5;
+    margin-bottom: 6px;
+    padding-left: 14px;
+    position: relative;
+  }
+  .obs-item::before { content: '→'; position: absolute; left: 0; opacity: 0.6; font-size: 10px; top: 2px; }
+  .obs-item:last-child { margin-bottom: 0; }
+
+  /* Chart containers */
+  .chart-wrap { position: relative; height: 200px; }
+  .chart-wrap-sm { position: relative; height: 180px; }
+
+  footer {
+    text-align: center;
+    padding: 24px;
+    font-size: 11px;
+    color: var(--text-muted);
+    font-family: 'DM Mono', monospace;
+    border-top: 1px solid var(--border);
+    margin-top: 8px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>Payroll Service Desk — Ticket Dashboard</h1>
+    <div class="subtitle">PAYR · voidev.atlassian.net · Mar 24 – Apr 16, 2026</div>
+  </div>
+  <div class="badge">100 tickets · Last refreshed Apr 16 2026</div>
+</header>
+
+<div class="container">
+
+  <!-- Metrics Row -->
+  <div class="metrics">
+    <div class="metric-card accent">
+      <div class="label">Total Tickets</div>
+      <div class="value">100</div>
+      <div class="sub">Mar 24 – Apr 16</div>
+    </div>
+    <div class="metric-card green">
+      <div class="label">Resolved</div>
+      <div class="value">88</div>
+      <div class="sub">88% resolution rate</div>
+    </div>
+    <div class="metric-card warn">
+      <div class="label">Open / Pending</div>
+      <div class="value">12</div>
+      <div class="sub">5 pending · 5 WIP · 1 open · 1 reopened</div>
+    </div>
+    <div class="metric-card amber">
+      <div class="label">Avg Resolution</div>
+      <div class="value">5.7d</div>
+      <div class="sub">across 88 resolved tickets</div>
+    </div>
+    <div class="metric-card">
+      <div class="label">Countries Active</div>
+      <div class="value">13</div>
+      <div class="sub">+ 8 unknown location</div>
+    </div>
+  </div>
+
+  <!-- Volume + Status row -->
+  <div class="grid-3">
+    <div class="card">
+      <div class="card-title">Daily Ticket Volume</div>
+      <div class="chart-wrap">
+        <canvas id="volumeChart"></canvas>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Status Breakdown</div>
+      <div class="chart-wrap-sm" style="height:160px; margin-top:10px;">
+        <canvas id="statusChart"></canvas>
+      </div>
+      <div style="margin-top:12px; display:flex; flex-wrap:wrap; gap:6px;">
+        <span class="pill pill-delivered">Delivered 87</span>
+        <span class="pill pill-wip">WIP 5</span>
+        <span class="pill pill-pending">Pending 5</span>
+        <span class="pill pill-reopened">Reopened 1</span>
+        <span class="pill pill-open">Open 1</span>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Category Distribution</div>
+      <div class="chart-wrap-sm" style="height:160px; margin-top:10px;">
+        <canvas id="catPieChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Country volume + Resolution by country -->
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title">Ticket Volume by Country</div>
+      <div id="countryVolume"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Avg Resolution Days by Country</div>
+      <div id="countryResolution"></div>
+    </div>
+  </div>
+
+  <!-- Category rows -->
+  <div class="card grid-full">
+    <div class="card-title">Category Breakdown — Volume, Resolution & Status</div>
+    <div class="cat-row" style="font-size:11px; color:var(--text-muted); font-weight:600; text-transform:uppercase; letter-spacing:0.06em; padding-bottom:6px; border-bottom:2px solid var(--border);">
+      <span>Category</span>
+      <span>Volume</span>
+      <span style="text-align:center">Avg Days</span>
+      <span style="text-align:center">Count</span>
+      <span>Status</span>
+    </div>
+    <div id="categoryRows"></div>
+  </div>
+
+  <!-- Sentiment -->
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title">Ticket Sentiment</div>
+      <div style="margin-top: 4px;">
+        <div class="sentiment-row">
+          <span class="sentiment-label">🟢 Neutral / polite</span>
+          <div class="sentiment-bar-wrap"><div class="sentiment-bar" style="width:29%; background:var(--green);"></div></div>
+          <span class="sentiment-pct">29%</span>
+        </div>
+        <div class="sentiment-row">
+          <span class="sentiment-label">⚪ Neutral</span>
+          <div class="sentiment-bar-wrap"><div class="sentiment-bar" style="width:62%; background:#c8c4bc;"></div></div>
+          <span class="sentiment-pct">62%</span>
+        </div>
+        <div class="sentiment-row">
+          <span class="sentiment-label">🔴 Urgent / frustrated</span>
+          <div class="sentiment-bar-wrap"><div class="sentiment-bar" style="width:8%; background:var(--warn);"></div></div>
+          <span class="sentiment-pct">8%</span>
+        </div>
+      </div>
+      <div style="margin-top:14px; font-size:12px; color:var(--text-muted); line-height:1.6;">
+        8 tickets flagged as urgent or frustrated — language includes "error", "incorrect", "not been paid". Monitor for escalation risk.
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Data Quality Flags</div>
+      <div style="display:flex; flex-direction:column; gap:10px; margin-top:4px;">
+        <div style="background:var(--warn-light); border:1px solid #f5c8b4; border-radius:8px; padding:12px 14px;">
+          <div style="font-size:11px; font-weight:700; color:var(--warn); text-transform:uppercase; letter-spacing:0.06em; margin-bottom:4px;">⚠ Payroll Request field: 13% filled</div>
+          <div style="font-size:12.5px; line-height:1.5;">Category data relies on keyword detection for 87% of tickets. Making this field mandatory on creation would transform reporting quality.</div>
+        </div>
+        <div style="background:var(--amber-light); border:1px solid #f0d08a; border-radius:8px; padding:12px 14px;">
+          <div style="font-size:11px; font-weight:700; color:var(--amber); text-transform:uppercase; letter-spacing:0.06em; margin-bottom:4px;">⚠ 8 tickets missing location</div>
+          <div style="font-size:12.5px; line-height:1.5;">Employee Location field blank on 8% of tickets. These default to "Unknown" in country reporting. Avg resolution 9.4d — possibly complex cases.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Observations -->
+  <div style="margin-top:16px;">
+    <div class="card-title" style="margin-bottom:12px; font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:0.07em; color:var(--text-muted);">Observations &amp; Actions</div>
+    <div class="observations">
+      <div class="obs-panel red">
+        <div class="obs-title">🔴 Needs Attention</div>
+        <div class="obs-item">Sweden averages 10.1 days — 2× France and Denmark. Root cause unclear.</div>
+        <div class="obs-item">Poland: 13.2 day avg, 2 of 3 tickets still open. Risk of escalation.</div>
+        <div class="obs-item">Bank / payment: 2 open tickets, 0 resolved — all unresolved. High sensitivity.</div>
+        <div class="obs-item">8 urgent/frustrated tickets — watch for escalations.</div>
+      </div>
+      <div class="obs-panel green">
+        <div class="obs-title">✅ Positives</div>
+        <div class="obs-item">Germany resolves in 0.8 days avg — best practice worth sharing.</div>
+        <div class="obs-item">88% resolution rate overall — strong throughput.</div>
+        <div class="obs-item">Denmark at 3.1d and France at 4.7d both performing well.</div>
+        <div class="obs-item">Absence/Overtime category resolves in 0.9d — highly efficient.</div>
+      </div>
+      <div class="obs-panel blue">
+        <div class="obs-title">💡 Quick Wins</div>
+        <div class="obs-item">Mar 25 spike (14 tickets) and Apr 13 (9 tickets) match payroll cycles — plan extra capacity.</div>
+        <div class="obs-item">Payslip/documents = 15 tickets. An FAQ or self-service page could reduce volume significantly.</div>
+        <div class="obs-item">Ask Jira admin to make Payroll Request mandatory — would unlock full categorisation reporting.</div>
+        <div class="obs-item">Investigate Sweden delays — share Germany's process as a model.</div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /container -->
+
+<footer>
+  Payroll Service Desk Dashboard · PAYR · voidev.atlassian.net · Generated Apr 16 2026 · Data: Mar 24 – Apr 16 2026 (100 tickets)
+</footer>
+
+<script>
+// ── DATA ──────────────────────────────────────────────────────────────
+const daily = {"2026-03-24":3,"2026-03-25":14,"2026-03-26":4,"2026-03-27":10,"2026-03-30":6,"2026-03-31":8,"2026-04-01":6,"2026-04-02":4,"2026-04-03":3,"2026-04-05":1,"2026-04-06":8,"2026-04-07":6,"2026-04-08":3,"2026-04-09":2,"2026-04-10":3,"2026-04-12":2,"2026-04-13":9,"2026-04-14":4,"2026-04-15":2,"2026-04-16":1};
+
+const countryStats = {"UK":{"total":28,"avg_days":5.7,"open":1},"France":{"total":15,"avg_days":4.7,"open":4},"Sweden":{"total":15,"avg_days":10.1,"open":2},"Germany":{"total":14,"avg_days":0.8,"open":0},"Denmark":{"total":5,"avg_days":3.1,"open":1},"Poland":{"total":3,"avg_days":13.2,"open":2},"Spain":{"total":2,"avg_days":7.9,"open":1},"Belgium":{"total":2,"avg_days":8.6,"open":0},"Italy":{"total":2,"avg_days":7.8,"open":0},"Norway":{"total":2,"avg_days":5.6,"open":0},"Finland":{"total":1,"avg_days":0.2,"open":0},"Netherlands":{"total":1,"avg_days":null,"open":1},"Switzerland":{"total":1,"avg_days":3.4,"open":0}};
+
+const catStats = {"Fine / allowance":{"total":20,"avg_days":6.4,"open":1},"Other":{"total":20,"avg_days":8.3,"open":4},"Payslip / documents":{"total":15,"avg_days":6.7,"open":2},"Sick leave / absence":{"total":9,"avg_days":4.4,"open":1},"Pay advance":{"total":6,"avg_days":5.4,"open":0},"Absence/Overtime":{"total":5,"avg_days":0.9,"open":0},"System / access":{"total":4,"avg_days":5.7,"open":0},"Vacation / holiday":{"total":4,"avg_days":11.2,"open":1},"Salary change":{"total":3,"avg_days":3.6,"open":1},"Bank / payment":{"total":2,"avg_days":null,"open":2},"Salary error":{"total":1,"avg_days":14.1,"open":0}};
+
+// ── CHART DEFAULTS ────────────────────────────────────────────────────
+Chart.defaults.font.family = "'DM Sans', sans-serif";
+Chart.defaults.font.size = 11;
+Chart.defaults.color = '#6b6860';
+
+// ── VOLUME CHART ──────────────────────────────────────────────────────
+const volLabels = Object.keys(daily).map(d => {
+  const parts = d.split('-');
+  return `${parts[2]}/${parts[1]}`;
+});
+const volData = Object.values(daily);
+
+new Chart(document.getElementById('volumeChart'), {
+  type: 'bar',
+  data: {
+    labels: volLabels,
+    datasets: [{
+      data: volData,
+      backgroundColor: volData.map(v => v >= 10 ? '#d45a2a' : v >= 7 ? '#b07a10' : '#2d4af0'),
+      borderRadius: 3,
+      borderSkipped: false,
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend: { display: false }, tooltip: { callbacks: { title: (items) => `Date: ${Object.keys(daily)[items[0].dataIndex]}` } } },
+    scales: {
+      x: { grid: { display: false }, ticks: { maxRotation: 45, font: { size: 9 } } },
+      y: { grid: { color: '#e2e0d8' }, ticks: { stepSize: 2 } }
+    }
+  }
+});
+
+// ── STATUS DONUT ──────────────────────────────────────────────────────
+new Chart(document.getElementById('statusChart'), {
+  type: 'doughnut',
+  data: {
+    labels: ['Delivered', 'Work in progress', 'Pending', 'Reopened', 'Open'],
+    datasets: [{
+      data: [87, 5, 5, 1, 1],
+      backgroundColor: ['#1e8a5e', '#2d4af0', '#c8c4bc', '#d45a2a', '#b07a10'],
+      borderWidth: 2,
+      borderColor: '#ffffff',
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    cutout: '65%',
+    plugins: {
+      legend: { display: false },
+      tooltip: { callbacks: { label: (item) => ` ${item.label}: ${item.raw}` } }
+    }
+  }
+});
+
+// ── CATEGORY PIE ──────────────────────────────────────────────────────
+const catNames = Object.keys(catStats);
+const catCounts = catNames.map(c => catStats[c].total);
+const pieColors = ['#2d4af0','#1e8a5e','#d45a2a','#b07a10','#7b5ea7','#2a8fb0','#b05a2a','#5a9e4a','#a04060','#4a6ea0','#c07a40'];
+
+new Chart(document.getElementById('catPieChart'), {
+  type: 'doughnut',
+  data: {
+    labels: catNames,
+    datasets: [{
+      data: catCounts,
+      backgroundColor: pieColors,
+      borderWidth: 2,
+      borderColor: '#ffffff',
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    cutout: '55%',
+    plugins: {
+      legend: { display: false },
+      tooltip: { callbacks: { label: (item) => ` ${item.label}: ${item.raw}` } }
+    }
+  }
+});
+
+// ── COUNTRY VOLUME BARS ───────────────────────────────────────────────
+const maxVol = 28;
+const countryVolumeEl = document.getElementById('countryVolume');
+const topCountries = Object.entries(countryStats).sort((a,b) => b[1].total - a[1].total);
+topCountries.forEach(([name, d]) => {
+  const pct = Math.round((d.total / maxVol) * 100);
+  const isTop = d.total >= 10;
+  countryVolumeEl.innerHTML += `
+    <div class="country-row">
+      <span class="country-name">${name}</span>
+      <div class="bar-wrap"><div class="bar-fill ${isTop ? '' : ''}" style="width:${pct}%; background:${isTop ? '#2d4af0' : '#a0a8e8'};"></div></div>
+      <span class="country-count">${d.total}</span>
+    </div>`;
+});
+
+// ── COUNTRY RESOLUTION BARS ───────────────────────────────────────────
+const maxRes = 13.2;
+const countryResEl = document.getElementById('countryResolution');
+const resCountries = Object.entries(countryStats)
+  .filter(([,d]) => d.avg_days !== null && d.total >= 2)
+  .sort((a,b) => b[1].avg_days - a[1].avg_days);
+
+resCountries.forEach(([name, d]) => {
+  const pct = Math.round((d.avg_days / maxRes) * 100);
+  let color = '#1e8a5e';
+  if (d.avg_days > 9) color = '#d45a2a';
+  else if (d.avg_days > 6) color = '#b07a10';
+  countryResEl.innerHTML += `
+    <div class="res-row">
+      <span>${name}</span>
+      <div class="res-bar-wrap"><div class="res-bar" style="width:${pct}%; background:${color};"></div></div>
+      <span class="res-days">${d.avg_days}d</span>
+      <span>${d.open > 0 ? `<span class='pill pill-open'>${d.open} open</span>` : '<span class="pill pill-fast">✓ clear</span>'}</span>
+    </div>`;
+});
+
+// ── CATEGORY ROWS ─────────────────────────────────────────────────────
+const maxCatVol = 20;
+const maxCatDays = 14.1;
+const catRowsEl = document.getElementById('categoryRows');
+const sortedCats = Object.entries(catStats).sort((a,b) => b[1].total - a[1].total);
+
+sortedCats.forEach(([name, d]) => {
+  const volPct = Math.round((d.total / maxCatVol) * 100);
+  const daysLabel = d.avg_days !== null ? `${d.avg_days}d` : '—';
+  let speedPill = '';
+  if (d.open > 0 && d.avg_days === null) speedPill = `<span class="pill pill-blocked">blocked</span>`;
+  else if (d.open > 0) speedPill = `<span class="pill pill-open">${d.open} open</span>`;
+  else if (d.avg_days !== null && d.avg_days < 2) speedPill = `<span class="pill pill-fast">fast</span>`;
+  else if (d.avg_days !== null && d.avg_days > 10) speedPill = `<span class="pill pill-slow">slow</span>`;
+  else speedPill = `<span class="pill pill-delivered">ok</span>`;
+
+  catRowsEl.innerHTML += `
+    <div class="cat-row">
+      <span class="cat-name">${name}</span>
+      <div class="cat-bar-wrap"><div class="cat-bar" style="width:${volPct}%;"></div></div>
+      <span class="cat-days">${daysLabel}</span>
+      <span class="cat-count">${d.total}</span>
+      <span>${speedPill}</span>
+    </div>`;
+});
+</script>
+</body>
+</html>
