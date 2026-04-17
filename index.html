@@ -3,615 +3,328 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Payroll Service Desk — Ticket Dashboard</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<title>Payroll Service Desk Dashboard</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   :root {
-    --bg: #f4f3ef;
+    --bg: #f9f8f5;
     --surface: #ffffff;
-    --border: #e2e0d8;
-    --text: #1a1916;
-    --text-muted: #6b6860;
-    --accent: #2d4af0;
-    --accent-light: #eaedfd;
-    --warn: #d45a2a;
-    --warn-light: #fdf0eb;
-    --green: #1e8a5e;
-    --green-light: #e8f5f0;
-    --amber: #b07a10;
-    --amber-light: #fdf6e3;
-    --radius: 12px;
-    --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+    --border: rgba(0,0,0,0.1);
+    --text: #1a1a18;
+    --muted: #6b6b68;
+    --accent: #378ADD;
+    --accent-dark: #185FA5;
+    --warn: #D85A30;
+    --warn-bg: #FAECE7;
+    --warn-text: #993C1D;
+    --ok-bg: #EAF3DE;
+    --ok-text: #3B6D11;
+    --info-bg: #E6F1FB;
+    --info-text: #185FA5;
+    --radius: 10px;
+    --shadow: 0 1px 3px rgba(0,0,0,0.06);
   }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body {
-    font-family: 'DM Sans', sans-serif;
-    background: var(--bg);
-    color: var(--text);
-    font-size: 14px;
-    line-height: 1.5;
-    min-height: 100vh;
-  }
-  header {
-    background: var(--surface);
-    border-bottom: 1px solid var(--border);
-    padding: 20px 32px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    position: sticky;
-    top: 0;
-    z-index: 10;
-  }
-  header h1 {
-    font-size: 16px;
-    font-weight: 600;
-    letter-spacing: -0.02em;
-  }
-  header .subtitle {
-    font-size: 12px;
-    color: var(--text-muted);
-    font-family: 'DM Mono', monospace;
-    margin-top: 2px;
-  }
-  header .badge {
-    font-size: 11px;
-    font-family: 'DM Mono', monospace;
-    background: var(--accent-light);
-    color: var(--accent);
-    padding: 4px 10px;
-    border-radius: 20px;
-  }
-  .container {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 28px 32px;
-  }
-  /* Metric row */
-  .metrics {
-    display: grid;
-    grid-template-columns: repeat(5, 1fr);
-    gap: 12px;
-    margin-bottom: 20px;
-  }
-  .metric-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 16px 18px;
-    box-shadow: var(--shadow);
-  }
-  .metric-card .label {
-    font-size: 11px;
-    color: var(--text-muted);
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    margin-bottom: 6px;
-    font-weight: 500;
-  }
-  .metric-card .value {
-    font-size: 28px;
-    font-weight: 700;
-    letter-spacing: -0.03em;
-    line-height: 1;
-  }
-  .metric-card .sub {
-    font-size: 11px;
-    color: var(--text-muted);
-    margin-top: 4px;
-    font-family: 'DM Mono', monospace;
-  }
-  .metric-card.accent .value { color: var(--accent); }
-  .metric-card.warn .value { color: var(--warn); }
-  .metric-card.green .value { color: var(--green); }
-  .metric-card.amber .value { color: var(--amber); }
-
-  /* Grid layouts */
-  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
-  .grid-3 { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 16px; margin-bottom: 16px; }
-  .grid-full { margin-bottom: 16px; }
-
-  /* Cards */
-  .card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 20px 22px;
-    box-shadow: var(--shadow);
-  }
-  .card-title {
-    font-size: 12px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.07em;
-    color: var(--text-muted);
-    margin-bottom: 16px;
-  }
-
-  /* Status pills */
-  .pill {
-    display: inline-block;
-    font-size: 10px;
-    font-weight: 600;
-    padding: 2px 8px;
-    border-radius: 20px;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    font-family: 'DM Mono', monospace;
-  }
-  .pill-delivered { background: var(--green-light); color: var(--green); }
-  .pill-open { background: var(--amber-light); color: var(--amber); }
-  .pill-wip { background: var(--accent-light); color: var(--accent); }
-  .pill-pending { background: #f0f0f0; color: #666; }
-  .pill-reopened { background: var(--warn-light); color: var(--warn); }
-  .pill-fast { background: var(--green-light); color: var(--green); }
-  .pill-blocked { background: var(--warn-light); color: var(--warn); }
-  .pill-slow { background: var(--amber-light); color: var(--amber); }
-
-  /* Country bar chart */
-  .country-row {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 10px;
-  }
-  .country-row:last-child { margin-bottom: 0; }
-  .country-name {
-    width: 100px;
-    font-size: 13px;
-    flex-shrink: 0;
-  }
-  .bar-wrap {
-    flex: 1;
-    background: var(--bg);
-    border-radius: 4px;
-    height: 8px;
-    overflow: hidden;
-  }
-  .bar-fill {
-    height: 100%;
-    border-radius: 4px;
-    background: var(--accent);
-    transition: width 0.4s ease;
-  }
-  .bar-fill.warn { background: var(--warn); }
-  .bar-fill.green { background: var(--green); }
-  .country-count {
-    font-size: 12px;
-    font-family: 'DM Mono', monospace;
-    color: var(--text-muted);
-    width: 20px;
-    text-align: right;
-  }
-
-  /* Category rows */
-  .cat-row {
-    display: grid;
-    grid-template-columns: 160px 1fr 60px 60px 80px;
-    align-items: center;
-    gap: 10px;
-    padding: 8px 0;
-    border-bottom: 1px solid var(--border);
-    font-size: 13px;
-  }
-  .cat-row:last-child { border-bottom: none; }
-  .cat-row .cat-name { font-weight: 500; }
-  .cat-bar-wrap {
-    background: var(--bg);
-    border-radius: 4px;
-    height: 6px;
-    overflow: hidden;
-  }
-  .cat-bar { height: 100%; border-radius: 4px; background: var(--accent); }
-  .cat-days { font-family: 'DM Mono', monospace; font-size: 12px; color: var(--text-muted); text-align: center; }
-  .cat-count { font-family: 'DM Mono', monospace; font-size: 12px; text-align: center; }
-
-  /* Resolution table */
-  .res-row {
-    display: grid;
-    grid-template-columns: 110px 1fr 80px 70px;
-    align-items: center;
-    gap: 10px;
-    padding: 8px 0;
-    border-bottom: 1px solid var(--border);
-    font-size: 13px;
-  }
-  .res-row:last-child { border-bottom: none; }
-  .res-bar-wrap { background: var(--bg); border-radius: 4px; height: 6px; overflow: hidden; }
-  .res-bar { height: 100%; border-radius: 4px; }
-  .res-days { font-family: 'DM Mono', monospace; font-size: 12px; color: var(--text-muted); text-align: right; }
-
-  /* Sentiment */
-  .sentiment-row {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 10px;
-  }
-  .sentiment-label { width: 140px; font-size: 13px; flex-shrink: 0; }
-  .sentiment-bar-wrap { flex: 1; background: var(--bg); border-radius: 4px; height: 10px; overflow: hidden; }
-  .sentiment-bar { height: 100%; border-radius: 4px; }
-  .sentiment-pct { font-size: 12px; font-family: 'DM Mono', monospace; color: var(--text-muted); width: 36px; text-align: right; }
-
-  /* Observations */
-  .observations { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 16px; }
-  .obs-panel {
-    border-radius: var(--radius);
-    padding: 16px 18px;
-    border: 1px solid;
-  }
-  .obs-panel.red { background: var(--warn-light); border-color: #f5c8b4; }
-  .obs-panel.green { background: var(--green-light); border-color: #b8ddd0; }
-  .obs-panel.blue { background: var(--accent-light); border-color: #c2ccf9; }
-  .obs-panel .obs-title {
-    font-size: 11px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    margin-bottom: 10px;
-  }
-  .obs-panel.red .obs-title { color: var(--warn); }
-  .obs-panel.green .obs-title { color: var(--green); }
-  .obs-panel.blue .obs-title { color: var(--accent); }
-  .obs-item {
-    font-size: 12.5px;
-    line-height: 1.5;
-    margin-bottom: 6px;
-    padding-left: 14px;
-    position: relative;
-  }
-  .obs-item::before { content: '→'; position: absolute; left: 0; opacity: 0.6; font-size: 10px; top: 2px; }
-  .obs-item:last-child { margin-bottom: 0; }
-
-  /* Chart containers */
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 14px; background: var(--bg); color: var(--text); min-height: 100vh; padding: 24px; }
+  .container { max-width: 1100px; margin: 0 auto; }
+  header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 8px; }
+  header h1 { font-size: 18px; font-weight: 600; }
+  .meta { font-size: 12px; color: var(--muted); margin-bottom: 20px; }
+  .controls { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  select, button { font-family: inherit; font-size: 13px; border: 1px solid var(--border); border-radius: 6px; padding: 6px 12px; background: var(--surface); color: var(--text); cursor: pointer; }
+  button:hover { background: #f0eeea; }
+  button.ai-btn { background: var(--info-bg); border-color: #b5d4f4; color: var(--info-text); font-weight: 500; }
+  button.ai-btn:hover { background: #cce2f7; }
+  button:disabled { opacity: 0.5; cursor: not-allowed; }
+  .metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 10px; margin-bottom: 20px; }
+  .metric { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 14px; box-shadow: var(--shadow); }
+  .metric-label { font-size: 11px; color: var(--muted); margin-bottom: 4px; }
+  .metric-value { font-size: 24px; font-weight: 600; line-height: 1.1; }
+  .metric-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+  @media (max-width: 640px) { .grid2 { grid-template-columns: 1fr; } }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 18px; box-shadow: var(--shadow); }
+  .card-title { font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 14px; }
   .chart-wrap { position: relative; height: 200px; }
-  .chart-wrap-sm { position: relative; height: 180px; }
-
-  footer {
-    text-align: center;
-    padding: 24px;
-    font-size: 11px;
-    color: var(--text-muted);
-    font-family: 'DM Mono', monospace;
-    border-top: 1px solid var(--border);
-    margin-top: 8px;
-  }
+  .bar-row { display: flex; align-items: center; gap: 7px; margin-bottom: 7px; font-size: 12px; }
+  .bar-label { width: 88px; text-align: right; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex-shrink: 0; }
+  .bar-track { flex: 1; background: #f0eeea; border-radius: 4px; height: 10px; overflow: hidden; }
+  .bar-fill { height: 10px; border-radius: 4px; transition: width 0.4s ease; }
+  .bar-count { width: 26px; text-align: right; color: var(--muted); flex-shrink: 0; }
+  .bar-meta { font-size: 11px; color: var(--muted); min-width: 96px; }
+  .pill { display: inline-block; font-size: 10px; padding: 2px 7px; border-radius: 100px; margin-left: 3px; font-weight: 500; }
+  .pill-open { background: var(--info-bg); color: var(--info-text); }
+  .pill-slow { background: var(--warn-bg); color: var(--warn-text); }
+  .pill-fast { background: var(--ok-bg); color: var(--ok-text); }
+  .ai-section { margin-top: 14px; }
+  .ai-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 18px; box-shadow: var(--shadow); }
+  .ai-content { font-size: 13px; line-height: 1.75; color: var(--muted); white-space: pre-wrap; }
+  .api-key-row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
+  .api-key-row label { font-size: 12px; color: var(--muted); }
+  .api-key-row input { font-family: monospace; font-size: 12px; border: 1px solid var(--border); border-radius: 6px; padding: 5px 10px; width: 280px; background: #fafaf8; }
+  .notice { font-size: 11px; color: var(--muted); background: #faf8f0; border: 1px solid #e8e0c8; border-radius: 6px; padding: 8px 12px; margin-bottom: 12px; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+  .loading { animation: pulse 1.2s ease-in-out infinite; }
+  footer { margin-top: 24px; font-size: 11px; color: var(--muted); text-align: center; }
 </style>
 </head>
 <body>
-
-<header>
-  <div>
-    <h1>Payroll Service Desk — Ticket Dashboard</h1>
-    <div class="subtitle">PAYR · voidev.atlassian.net · Mar 24 – Apr 16, 2026</div>
-  </div>
-  <div class="badge">100 tickets · Last refreshed Apr 16 2026</div>
-</header>
-
 <div class="container">
 
-  <!-- Description -->
-  <div style="background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:16px 20px; margin-bottom:20px; box-shadow:var(--shadow); display:flex; gap:16px; align-items:flex-start;">
-    <div style="font-size:20px; flex-shrink:0; margin-top:1px;">📋</div>
-    <div>
-      <div style="font-size:13.5px; font-weight:600; margin-bottom:4px;">What you're looking at</div>
-      <div style="font-size:13px; color:var(--text-muted); line-height:1.6;">
-        This dashboard tracks all payroll support tickets submitted to the <strong style="color:var(--text);">PAYR Jira Service Desk</strong> over the last 90 days (Mar 24 – Apr 16, 2026). It shows ticket volume by country and category, how quickly issues are being resolved, and where bottlenecks exist. Categories are detected from ticket content using keyword matching, since the Payroll Request field is only 13% filled in. Country data comes from the <strong style="color:var(--text);">Employee Location</strong> custom field — much more reliable than keyword detection. Use this to spot trends, prioritise follow-up, and make the case for process improvements.
-      </div>
+  <header>
+    <h1>Payroll service desk</h1>
+    <div class="controls">
+      <select id="tf">
+        <option value="30">Last 30 days</option>
+        <option value="60">Last 60 days</option>
+        <option value="90" selected>Last 90 days</option>
+      </select>
+      <select id="cf"><option value="all">All countries</option></select>
     </div>
-  </div>
+  </header>
+  <div class="meta" id="meta">PAYR · voidev.atlassian.net · fetched Apr 17 2026</div>
 
-  <!-- Metrics Row -->
   <div class="metrics">
-    <div class="metric-card accent">
-      <div class="label">Total Tickets</div>
-      <div class="value">100</div>
-      <div class="sub">Mar 24 – Apr 16</div>
+    <div class="metric"><div class="metric-label">Tickets</div><div class="metric-value" id="m0">—</div></div>
+    <div class="metric"><div class="metric-label">Open</div><div class="metric-value" id="m1">—</div></div>
+    <div class="metric"><div class="metric-label">Avg resolution</div><div class="metric-value" id="m2">—</div><div class="metric-sub">days</div></div>
+    <div class="metric"><div class="metric-label">Avg 1st response</div><div class="metric-value" id="m3">—</div><div class="metric-sub">days</div></div>
+    <div class="metric"><div class="metric-label">Countries</div><div class="metric-value" id="m4">—</div></div>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <div class="card-title">Volume by day</div>
+      <div class="chart-wrap"><canvas id="volC"></canvas></div>
     </div>
-    <div class="metric-card green">
-      <div class="label">Resolved</div>
-      <div class="value">88</div>
-      <div class="sub">88% resolution rate</div>
-    </div>
-    <div class="metric-card warn">
-      <div class="label">Open / Pending</div>
-      <div class="value">12</div>
-      <div class="sub">5 pending · 5 WIP · 1 open · 1 reopened</div>
-    </div>
-    <div class="metric-card amber">
-      <div class="label">Avg Resolution</div>
-      <div class="value">5.7d</div>
-      <div class="sub">across 88 resolved tickets</div>
-    </div>
-    <div class="metric-card">
-      <div class="label">Countries Active</div>
-      <div class="value">13</div>
-      <div class="sub">+ 8 unknown location</div>
+    <div class="card">
+      <div class="card-title">By country — tickets / resolution / 1st response</div>
+      <div id="cBars"></div>
     </div>
   </div>
 
-  <!-- Volume + Status row -->
-  <div class="grid-3">
+  <div class="grid2">
     <div class="card">
-      <div class="card-title">Daily Ticket Volume</div>
-      <div class="chart-wrap">
-        <canvas id="volumeChart"></canvas>
-      </div>
+      <div class="card-title">By category</div>
+      <div id="catBars"></div>
     </div>
     <div class="card">
-      <div class="card-title">Status Breakdown</div>
-      <div class="chart-wrap-sm" style="height:160px; margin-top:10px;">
-        <canvas id="statusChart"></canvas>
-      </div>
-      <div style="margin-top:12px; display:flex; flex-wrap:wrap; gap:6px;">
-        <span class="pill pill-delivered">Delivered 87</span>
-        <span class="pill pill-wip">WIP 5</span>
-        <span class="pill pill-pending">Pending 5</span>
-        <span class="pill pill-reopened">Reopened 1</span>
-        <span class="pill pill-open">Open 1</span>
-      </div>
-    </div>
-    <div class="card">
-      <div class="card-title">Category Distribution</div>
-      <div class="chart-wrap-sm" style="height:160px; margin-top:10px;">
-        <canvas id="catPieChart"></canvas>
-      </div>
+      <div class="card-title">Resolution vs 1st response (bubble = volume)</div>
+      <div class="chart-wrap"><canvas id="frtC"></canvas></div>
     </div>
   </div>
 
-  <!-- Country volume + Resolution by country -->
-  <div class="grid-2">
-    <div class="card">
-      <div class="card-title">Ticket Volume by Country</div>
-      <div id="countryVolume"></div>
-    </div>
-    <div class="card">
-      <div class="card-title">Avg Resolution Days by Country</div>
-      <div id="countryResolution"></div>
-    </div>
-  </div>
-
-  <!-- Category rows -->
-  <div class="card grid-full">
-    <div class="card-title">Category Breakdown — Volume, Resolution & Status</div>
-    <div class="cat-row" style="font-size:11px; color:var(--text-muted); font-weight:600; text-transform:uppercase; letter-spacing:0.06em; padding-bottom:6px; border-bottom:2px solid var(--border);">
-      <span>Category</span>
-      <span>Volume</span>
-      <span style="text-align:center">Avg Days</span>
-      <span style="text-align:center">Count</span>
-      <span>Status</span>
-    </div>
-    <div id="categoryRows"></div>
-  </div>
-
-  <!-- Sentiment -->
-  <div class="grid-2">
-    <div class="card">
-      <div class="card-title">Ticket Sentiment</div>
-      <div style="margin-top: 4px;">
-        <div class="sentiment-row">
-          <span class="sentiment-label">🟢 Neutral / polite</span>
-          <div class="sentiment-bar-wrap"><div class="sentiment-bar" style="width:29%; background:var(--green);"></div></div>
-          <span class="sentiment-pct">29%</span>
-        </div>
-        <div class="sentiment-row">
-          <span class="sentiment-label">⚪ Neutral</span>
-          <div class="sentiment-bar-wrap"><div class="sentiment-bar" style="width:62%; background:#c8c4bc;"></div></div>
-          <span class="sentiment-pct">62%</span>
-        </div>
-        <div class="sentiment-row">
-          <span class="sentiment-label">🔴 Urgent / frustrated</span>
-          <div class="sentiment-bar-wrap"><div class="sentiment-bar" style="width:8%; background:var(--warn);"></div></div>
-          <span class="sentiment-pct">8%</span>
-        </div>
+  <div class="ai-section">
+    <div class="ai-box">
+      <div class="card-title" style="margin-bottom:10px">AI analysis</div>
+      <div class="notice">To use AI analysis, enter your Anthropic API key below. The key is used directly from your browser and never sent anywhere except the Anthropic API.</div>
+      <div class="api-key-row">
+        <label for="apiKey">Anthropic API key</label>
+        <input type="password" id="apiKey" placeholder="sk-ant-..." />
+        <button class="ai-btn" onclick="runAI()">Analyse with AI ↗</button>
       </div>
-      <div style="margin-top:14px; font-size:12px; color:var(--text-muted); line-height:1.6;">
-        8 tickets flagged as urgent or frustrated — language includes "error", "incorrect", "not been paid". Monitor for escalation risk.
-      </div>
-    </div>
-    <div class="card">
-      <div class="card-title">Data Quality Flags</div>
-      <div style="display:flex; flex-direction:column; gap:10px; margin-top:4px;">
-        <div style="background:var(--warn-light); border:1px solid #f5c8b4; border-radius:8px; padding:12px 14px;">
-          <div style="font-size:11px; font-weight:700; color:var(--warn); text-transform:uppercase; letter-spacing:0.06em; margin-bottom:4px;">⚠ Payroll Request field: 13% filled</div>
-          <div style="font-size:12.5px; line-height:1.5;">Category data relies on keyword detection for 87% of tickets. Making this field mandatory on creation would transform reporting quality.</div>
-        </div>
-        <div style="background:var(--amber-light); border:1px solid #f0d08a; border-radius:8px; padding:12px 14px;">
-          <div style="font-size:11px; font-weight:700; color:var(--amber); text-transform:uppercase; letter-spacing:0.06em; margin-bottom:4px;">⚠ 8 tickets missing location</div>
-          <div style="font-size:12.5px; line-height:1.5;">Employee Location field blank on 8% of tickets. These default to "Unknown" in country reporting. Avg resolution 9.4d — possibly complex cases.</div>
-        </div>
-      </div>
+      <div class="ai-content" id="aiOut">Enter an API key and click "Analyse with AI" to get an intelligent summary of the current view.</div>
     </div>
   </div>
 
-  <!-- Observations -->
-  <div style="margin-top:16px;">
-    <div class="card-title" style="margin-bottom:12px; font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:0.07em; color:var(--text-muted);">Observations &amp; Actions</div>
-    <div class="observations">
-      <div class="obs-panel red">
-        <div class="obs-title">🔴 Needs Attention</div>
-        <div class="obs-item">Sweden averages 10.1 days — 2× France and Denmark. Root cause unclear.</div>
-        <div class="obs-item">Poland: 13.2 day avg, 2 of 3 tickets still open. Risk of escalation.</div>
-        <div class="obs-item">Bank / payment: 2 open tickets, 0 resolved — all unresolved. High sensitivity.</div>
-        <div class="obs-item">8 urgent/frustrated tickets — watch for escalations.</div>
-      </div>
-      <div class="obs-panel green">
-        <div class="obs-title">✅ Positives</div>
-        <div class="obs-item">Germany resolves in 0.8 days avg — best practice worth sharing.</div>
-        <div class="obs-item">88% resolution rate overall — strong throughput.</div>
-        <div class="obs-item">Denmark at 3.1d and France at 4.7d both performing well.</div>
-        <div class="obs-item">Absence/Overtime category resolves in 0.9d — highly efficient.</div>
-      </div>
-      <div class="obs-panel blue">
-        <div class="obs-title">💡 Quick Wins</div>
-        <div class="obs-item">Mar 25 spike (14 tickets) and Apr 13 (9 tickets) match payroll cycles — plan extra capacity.</div>
-        <div class="obs-item">Payslip/documents = 15 tickets. An FAQ or self-service page could reduce volume significantly.</div>
-        <div class="obs-item">Ask Jira admin to make Payroll Request mandatory — would unlock full categorisation reporting.</div>
-        <div class="obs-item">Investigate Sweden delays — share Germany's process as a model.</div>
-      </div>
-    </div>
-  </div>
-
-</div><!-- /container -->
-
-<footer>
-  Payroll Service Desk Dashboard · PAYR · voidev.atlassian.net · Generated Apr 16 2026 · Data: Mar 24 – Apr 16 2026 (100 tickets)
-</footer>
+  <footer>Payroll Service Desk Dashboard · PAYR · voidev.atlassian.net · Generated Apr 17 2026</footer>
+</div>
 
 <script>
-// ── DATA ──────────────────────────────────────────────────────────────
-const daily = {"2026-03-24":3,"2026-03-25":14,"2026-03-26":4,"2026-03-27":10,"2026-03-30":6,"2026-03-31":8,"2026-04-01":6,"2026-04-02":4,"2026-04-03":3,"2026-04-05":1,"2026-04-06":8,"2026-04-07":6,"2026-04-08":3,"2026-04-09":2,"2026-04-10":3,"2026-04-12":2,"2026-04-13":9,"2026-04-14":4,"2026-04-15":2,"2026-04-16":1};
+const RAW = [{"key":"PAYR-5903","status":"Delivered","done":true,"created":"2026-04-17T08:03:46","resolved":"2026-04-17T09:35:49","country":"Sweden","category":"HR partner","first_comment":"2026-04-17T09:34:42"},{"key":"PAYR-5902","status":"TO DO","done":false,"created":"2026-04-16T17:00:36","resolved":null,"country":null,"category":null,"first_comment":"2026-04-16T17:00:38"},{"key":"PAYR-5901","status":"Work in progress","done":false,"created":"2026-04-16T16:52:04","resolved":null,"country":"Sweden","category":"Request Certificate","first_comment":"2026-04-17T09:37:43"},{"key":"PAYR-5900","status":"Work in progress","done":false,"created":"2026-04-16T16:38:36","resolved":null,"country":"Finland","category":null,"first_comment":"2026-04-17T09:39:48"},{"key":"PAYR-5899","status":"Delivered","done":true,"created":"2026-04-16T15:58:59","resolved":"2026-04-17T09:43:11","country":"Sweden","category":"Incorrect Personal Data","first_comment":"2026-04-17T09:42:47"},{"key":"PAYR-5898","status":"Open","done":false,"created":"2026-04-16T15:32:23","resolved":null,"country":"France","category":null,"first_comment":"2026-04-16T15:32:24"},{"key":"PAYR-5897","status":"Open","done":false,"created":"2026-04-16T10:53:00","resolved":null,"country":"Denmark","category":null,"first_comment":null},{"key":"PAYR-5896","status":"Delivered","done":true,"created":"2026-04-16T09:23:04","resolved":"2026-04-16T09:25:21","country":null,"category":null,"first_comment":null},{"key":"PAYR-5895","status":"Delivered","done":true,"created":"2026-04-15T12:00:12","resolved":"2026-04-15T13:56:27","country":"Germany","category":"Absence/Overtime/OB/Referral/Bonus","first_comment":"2026-04-15T12:00:16"},{"key":"PAYR-5894","status":"Delivered","done":true,"created":"2026-04-15T11:51:12","resolved":"2026-04-15T17:59:20","country":"Denmark","category":null,"first_comment":"2026-04-15T17:59:14"},{"key":"PAYR-5893","status":"Delivered","done":true,"created":"2026-04-14T14:58:40","resolved":"2026-04-14T16:09:31","country":"France","category":null,"first_comment":"2026-04-14T14:58:42"},{"key":"PAYR-5892","status":"Work in progress","done":false,"created":"2026-04-14T13:10:15","resolved":null,"country":"Spain","category":null,"first_comment":"2026-04-14T16:05:27"},{"key":"PAYR-5891","status":"Reopened","done":false,"created":"2026-04-14T12:33:13","resolved":null,"country":"France","category":null,"first_comment":"2026-04-14T17:46:05"},{"key":"PAYR-5890","status":"Delivered","done":true,"created":"2026-04-14T11:09:37","resolved":"2026-04-14T16:34:04","country":"Finland","category":null,"first_comment":"2026-04-14T16:33:58"},{"key":"PAYR-5888","status":"Delivered","done":true,"created":"2026-04-13T17:09:53","resolved":"2026-04-16T17:42:46","country":"Netherlands","category":null,"first_comment":"2026-04-14T16:35:29"},{"key":"PAYR-5887","status":"Delivered","done":true,"created":"2026-04-13T16:31:18","resolved":"2026-04-16T17:42:30","country":"Sweden","category":null,"first_comment":"2026-04-16T10:01:12"},{"key":"PAYR-5886","status":"Delivered","done":true,"created":"2026-04-13T16:05:51","resolved":"2026-04-16T15:00:55","country":"Germany","category":"Absence/Overtime/OB/Referral/Bonus","first_comment":"2026-04-13T16:05:52"},{"key":"PAYR-5885","status":"Delivered","done":true,"created":"2026-04-13T15:02:05","resolved":"2026-04-16T14:55:44","country":"Germany","category":"Incorrect Personal Data","first_comment":"2026-04-14T10:32:40"},{"key":"PAYR-5884","status":"Delivered","done":true,"created":"2026-04-13T14:28:33","resolved":"2026-04-14T13:35:03","country":"France","category":null,"first_comment":"2026-04-14T13:34:57"},{"key":"PAYR-5883","status":"Delivered","done":true,"created":"2026-04-13T10:09:42","resolved":"2026-04-14T16:33:38","country":"Sweden","category":null,"first_comment":"2026-04-14T16:33:22"},{"key":"PAYR-5882","status":"Delivered","done":true,"created":"2026-04-13T09:09:34","resolved":"2026-04-13T12:17:02","country":"Germany","category":"Absence/Overtime/OB/Referral/Bonus","first_comment":"2026-04-13T12:16:38"},{"key":"PAYR-5881","status":"Delivered","done":true,"created":"2026-04-13T07:54:27","resolved":"2026-04-13T14:55:10","country":"Germany","category":null,"first_comment":"2026-04-13T12:07:34"},{"key":"PAYR-5880","status":"Delivered","done":true,"created":"2026-04-13T06:00:30","resolved":"2026-04-16T15:01:46","country":"Switzerland","category":"Incorrect Personal Data","first_comment":"2026-04-13T12:04:16"},{"key":"PAYR-5889","status":"Delivered","done":true,"created":"2026-04-12T17:25:13","resolved":"2026-04-14T10:21:40","country":null,"category":null,"first_comment":"2026-04-14T08:12:37"},{"key":"PAYR-5879","status":"Delivered","done":true,"created":"2026-04-12T07:27:44","resolved":"2026-04-15T10:49:48","country":"Denmark","category":null,"first_comment":"2026-04-15T10:49:44"},{"key":"PAYR-5878","status":"Delivered","done":true,"created":"2026-04-10T13:44:06","resolved":"2026-04-14T15:39:16","country":null,"category":null,"first_comment":"2026-04-10T13:44:08"},{"key":"PAYR-5877","status":"Delivered","done":true,"created":"2026-04-10T11:02:30","resolved":"2026-04-14T16:32:53","country":"Norway","category":null,"first_comment":"2026-04-14T16:32:48"},{"key":"PAYR-5876","status":"Pending","done":false,"created":"2026-04-10T10:18:15","resolved":null,"country":"Poland","category":null,"first_comment":"2026-04-10T10:18:16"},{"key":"PAYR-5875","status":"Delivered","done":true,"created":"2026-04-09T13:47:15","resolved":"2026-04-16T17:42:20","country":"Sweden","category":null,"first_comment":"2026-04-16T09:48:09"},{"key":"PAYR-5874","status":"Delivered","done":true,"created":"2026-04-09T11:08:50","resolved":"2026-04-14T13:38:44","country":"UK","category":null,"first_comment":"2026-04-14T13:38:40"},{"key":"PAYR-5873","status":"Delivered","done":true,"created":"2026-04-08T15:23:44","resolved":"2026-04-16T14:04:16","country":"Spain","category":null,"first_comment":"2026-04-09T14:09:48"},{"key":"PAYR-5872","status":"Delivered","done":true,"created":"2026-04-08T09:06:41","resolved":"2026-04-10T11:42:34","country":"UK","category":null,"first_comment":"2026-04-09T16:18:22"},{"key":"PAYR-5871","status":"Delivered","done":true,"created":"2026-04-08T08:59:05","resolved":"2026-04-14T15:32:50","country":null,"category":null,"first_comment":"2026-04-08T08:59:07"},{"key":"PAYR-5870","status":"Delivered","done":true,"created":"2026-04-07T17:07:08","resolved":"2026-04-14T16:30:38","country":"Sweden","category":null,"first_comment":"2026-04-10T10:15:34"},{"key":"PAYR-5869","status":"Delivered","done":true,"created":"2026-04-07T14:28:23","resolved":"2026-04-16T14:17:41","country":"Belgium","category":null,"first_comment":"2026-04-10T11:54:17"},{"key":"PAYR-5868","status":"Delivered","done":true,"created":"2026-04-07T12:58:53","resolved":"2026-04-09T11:29:54","country":"UK","category":null,"first_comment":"2026-04-09T11:29:50"},{"key":"PAYR-5867","status":"Delivered","done":true,"created":"2026-04-07T11:54:47","resolved":"2026-04-09T11:25:37","country":"UK","category":null,"first_comment":"2026-04-09T11:25:33"},{"key":"PAYR-5865","status":"Delivered","done":true,"created":"2026-04-07T09:35:19","resolved":"2026-04-14T16:27:44","country":"Sweden","category":null,"first_comment":"2026-04-10T10:00:41"},{"key":"PAYR-5866","status":"Delivered","done":true,"created":"2026-04-07T09:32:16","resolved":"2026-04-10T10:15:15","country":"Sweden","category":null,"first_comment":"2026-04-07T09:32:19"},{"key":"PAYR-5864","status":"Delivered","done":true,"created":"2026-04-06T14:11:09","resolved":"2026-04-16T14:26:42","country":"UK","category":null,"first_comment":"2026-04-06T14:11:10"},{"key":"PAYR-5863","status":"Delivered","done":true,"created":"2026-04-06T13:42:04","resolved":"2026-04-16T14:24:15","country":"UK","category":null,"first_comment":"2026-04-06T13:42:05"},{"key":"PAYR-5862","status":"Pending","done":false,"created":"2026-04-06T13:33:31","resolved":null,"country":"UK","category":null,"first_comment":"2026-04-06T13:33:32"},{"key":"PAYR-5861","status":"Delivered","done":true,"created":"2026-04-06T13:28:50","resolved":"2026-04-16T14:22:05","country":"UK","category":null,"first_comment":"2026-04-06T13:28:51"},{"key":"PAYR-5860","status":"Delivered","done":true,"created":"2026-04-06T13:24:42","resolved":"2026-04-16T14:21:11","country":"UK","category":null,"first_comment":"2026-04-06T13:24:44"},{"key":"PAYR-5859","status":"Delivered","done":true,"created":"2026-04-06T13:16:39","resolved":"2026-04-16T14:20:39","country":"UK","category":null,"first_comment":"2026-04-06T13:16:41"},{"key":"PAYR-5858","status":"Delivered","done":true,"created":"2026-04-06T09:59:36","resolved":"2026-04-10T11:49:14","country":"France","category":null,"first_comment":"2026-04-10T11:49:09"},{"key":"PAYR-5857","status":"Delivered","done":true,"created":"2026-04-06T07:50:47","resolved":"2026-04-10T09:57:50","country":"Denmark","category":null,"first_comment":"2026-04-07T12:12:04"},{"key":"PAYR-5856","status":"Delivered","done":true,"created":"2026-04-05T12:03:42","resolved":"2026-04-14T14:01:34","country":"France","category":null,"first_comment":"2026-04-10T11:45:45"},{"key":"PAYR-5855","status":"Delivered","done":true,"created":"2026-04-03T15:30:47","resolved":"2026-04-09T15:52:51","country":"France","category":null,"first_comment":"2026-04-08T11:16:31"},{"key":"PAYR-5854","status":"Delivered","done":true,"created":"2026-04-03T13:33:14","resolved":"2026-04-09T11:33:33","country":"UK","category":null,"first_comment":"2026-04-09T11:33:30"},{"key":"PAYR-5853","status":"Delivered","done":true,"created":"2026-04-03T10:42:32","resolved":"2026-04-10T09:56:26","country":"Norway","category":null,"first_comment":"2026-04-10T09:55:30"},{"key":"PAYR-5852","status":"Delivered","done":true,"created":"2026-04-02T13:41:35","resolved":"2026-04-15T17:56:11","country":"Sweden","category":null,"first_comment":"2026-04-10T09:54:06"},{"key":"PAYR-5851","status":"Delivered","done":true,"created":"2026-04-02T13:41:05","resolved":"2026-04-14T14:06:52","country":null,"category":null,"first_comment":"2026-04-02T13:41:07"},{"key":"PAYR-5850","status":"Delivered","done":true,"created":"2026-04-02T12:26:28","resolved":"2026-04-15T17:56:01","country":"Sweden","category":null,"first_comment":"2026-04-10T09:52:58"},{"key":"PAYR-5849","status":"Work in progress","done":false,"created":"2026-04-02T11:08:34","resolved":null,"country":"France","category":null,"first_comment":"2026-04-02T15:35:29"},{"key":"PAYR-5848","status":"Delivered","done":true,"created":"2026-04-01T16:01:09","resolved":"2026-04-02T08:54:40","country":"Italy","category":null,"first_comment":"2026-04-02T08:54:34"},{"key":"PAYR-5847","status":"Delivered","done":true,"created":"2026-04-01T14:59:04","resolved":"2026-04-16T15:02:12","country":null,"category":null,"first_comment":null},{"key":"PAYR-5845","status":"Delivered","done":true,"created":"2026-04-01T09:59:52","resolved":"2026-04-14T16:18:01","country":"Sweden","category":null,"first_comment":"2026-04-01T09:59:53"},{"key":"PAYR-5844","status":"Delivered","done":true,"created":"2026-04-01T09:42:39","resolved":"2026-04-14T13:57:19","country":"Poland","category":null,"first_comment":"2026-04-10T09:36:36"},{"key":"PAYR-5843","status":"Delivered","done":true,"created":"2026-04-01T09:23:06","resolved":"2026-04-14T13:53:00","country":null,"category":null,"first_comment":"2026-04-01T09:23:08"},{"key":"PAYR-5842","status":"Delivered","done":true,"created":"2026-04-01T08:00:38","resolved":"2026-04-01T11:37:01","country":"Germany","category":"Request Certificate","first_comment":"2026-04-01T08:00:39"},{"key":"PAYR-5841","status":"Delivered","done":true,"created":"2026-03-31T16:00:23","resolved":"2026-04-14T16:16:57","country":"Sweden","category":null,"first_comment":"2026-03-31T16:00:24"},{"key":"PAYR-5840","status":"Delivered","done":true,"created":"2026-03-31T15:48:10","resolved":"2026-04-09T15:47:09","country":"UK","category":null,"first_comment":"2026-04-02T15:29:41"},{"key":"PAYR-5838","status":"Delivered","done":true,"created":"2026-03-31T15:16:42","resolved":"2026-04-02T15:28:19","country":"France","category":null,"first_comment":"2026-03-31T15:16:43"},{"key":"PAYR-5846","status":"Delivered","done":true,"created":"2026-03-31T14:32:09","resolved":"2026-04-02T08:27:53","country":"Germany","category":"Request Certificate","first_comment":"2026-03-31T14:32:11"},{"key":"PAYR-5837","status":"Delivered","done":true,"created":"2026-03-31T12:28:28","resolved":"2026-04-14T15:45:18","country":"Sweden","category":null,"first_comment":"2026-04-01T11:35:04"},{"key":"PAYR-5836","status":"Delivered","done":true,"created":"2026-03-31T12:02:21","resolved":"2026-04-14T15:43:08","country":"Sweden","category":null,"first_comment":"2026-03-31T12:02:22"},{"key":"PAYR-5835","status":"Pending","done":false,"created":"2026-03-31T09:31:41","resolved":null,"country":"France","category":null,"first_comment":"2026-03-31T15:38:21"},{"key":"PAYR-5834","status":"Delivered","done":true,"created":"2026-03-31T08:26:13","resolved":"2026-04-01T11:36:47","country":"Sweden","category":null,"first_comment":"2026-03-31T12:46:30"},{"key":"PAYR-5833","status":"Delivered","done":true,"created":"2026-03-30T18:49:46","resolved":"2026-04-09T15:32:36","country":"France","category":null,"first_comment":"2026-03-31T15:36:31"},{"key":"PAYR-5832","status":"Delivered","done":true,"created":"2026-03-30T17:05:27","resolved":"2026-04-09T15:31:25","country":"France","category":null,"first_comment":"2026-03-31T15:27:16"},{"key":"PAYR-5831","status":"Delivered","done":true,"created":"2026-03-30T15:22:15","resolved":"2026-03-31T15:24:47","country":"France","category":null,"first_comment":"2026-03-31T15:24:43"},{"key":"PAYR-5830","status":"Delivered","done":true,"created":"2026-03-30T15:16:25","resolved":"2026-04-02T15:27:02","country":"France","category":null,"first_comment":"2026-03-31T15:23:01"},{"key":"PAYR-5829","status":"Delivered","done":true,"created":"2026-03-30T13:16:48","resolved":"2026-04-14T15:41:20","country":"Sweden","category":null,"first_comment":"2026-04-01T11:35:31"},{"key":"PAYR-5828","status":"Delivered","done":true,"created":"2026-03-30T08:16:09","resolved":"2026-04-14T13:47:07","country":null,"category":null,"first_comment":"2026-03-30T08:16:13"},{"key":"PAYR-5827","status":"Delivered","done":true,"created":"2026-03-27T15:44:06","resolved":"2026-03-31T14:36:08","country":"UK","category":null,"first_comment":"2026-03-31T14:36:04"},{"key":"PAYR-5826","status":"Delivered","done":true,"created":"2026-03-27T15:18:27","resolved":"2026-04-01T11:36:31","country":"Denmark","category":null,"first_comment":"2026-03-27T15:43:25"},{"key":"PAYR-5825","status":"Delivered","done":true,"created":"2026-03-27T13:35:29","resolved":"2026-03-31T14:35:10","country":"UK","category":null,"first_comment":"2026-03-27T13:35:30"},{"key":"PAYR-5824","status":"Delivered","done":true,"created":"2026-03-27T13:27:09","resolved":"2026-03-31T14:34:28","country":"UK","category":null,"first_comment":"2026-03-27T13:27:10"},{"key":"PAYR-5823","status":"Delivered","done":true,"created":"2026-03-27T13:05:48","resolved":"2026-03-31T14:33:21","country":"UK","category":null,"first_comment":"2026-03-27T13:05:49"},{"key":"PAYR-5822","status":"Delivered","done":true,"created":"2026-03-27T13:00:35","resolved":"2026-03-31T14:32:17","country":"UK","category":null,"first_comment":"2026-03-27T13:00:36"},{"key":"PAYR-5821","status":"Delivered","done":true,"created":"2026-03-27T12:45:17","resolved":"2026-03-31T14:28:43","country":"UK","category":null,"first_comment":"2026-03-27T12:45:18"},{"key":"PAYR-5820","status":"Delivered","done":true,"created":"2026-03-27T11:36:29","resolved":"2026-03-31T14:27:56","country":"UK","category":null,"first_comment":"2026-03-27T11:36:31"},{"key":"PAYR-5819","status":"Delivered","done":true,"created":"2026-03-27T11:31:33","resolved":"2026-03-31T14:27:02","country":"UK","category":null,"first_comment":"2026-03-27T11:31:34"},{"key":"PAYR-5818","status":"Delivered","done":true,"created":"2026-03-27T11:07:47","resolved":"2026-03-31T14:26:26","country":"UK","category":null,"first_comment":"2026-03-27T11:07:48"},{"key":"PAYR-5817","status":"Delivered","done":true,"created":"2026-03-26T14:56:24","resolved":"2026-04-10T09:49:34","country":"Sweden","category":null,"first_comment":"2026-03-30T09:54:26"},{"key":"PAYR-5816","status":"Delivered","done":true,"created":"2026-03-26T13:58:12","resolved":"2026-04-10T09:49:19","country":"Italy","category":null,"first_comment":"2026-03-30T09:56:06"},{"key":"PAYR-5815","status":"Delivered","done":true,"created":"2026-03-26T09:28:46","resolved":"2026-03-31T14:25:01","country":"UK","category":null,"first_comment":"2026-03-31T14:24:55"},{"key":"PAYR-5814","status":"Delivered","done":true,"created":"2026-03-26T09:00:56","resolved":"2026-03-27T12:38:33","country":"Germany","category":"Absence/Overtime/OB/Referral/Bonus","first_comment":"2026-03-27T10:04:29"},{"key":"PAYR-5813","status":"Delivered","done":true,"created":"2026-03-25T18:14:29","resolved":"2026-03-31T14:23:25","country":"France","category":null,"first_comment":"2026-03-25T18:14:30"},{"key":"PAYR-5812","status":"Delivered","done":true,"created":"2026-03-25T17:16:15","resolved":"2026-03-31T14:20:53","country":"UK","category":null,"first_comment":"2026-03-25T17:16:16"},{"key":"PAYR-5811","status":"Delivered","done":true,"created":"2026-03-25T16:31:35","resolved":"2026-03-31T14:21:03","country":"UK","category":null,"first_comment":"2026-03-25T16:31:36"},{"key":"PAYR-5810","status":"Delivered","done":true,"created":"2026-03-25T16:21:33","resolved":"2026-03-31T14:21:12","country":"UK","category":null,"first_comment":"2026-03-25T16:21:34"},{"key":"PAYR-5809","status":"Delivered","done":true,"created":"2026-03-25T16:07:12","resolved":"2026-03-31T14:20:07","country":"UK","category":null,"first_comment":"2026-03-25T16:07:13"},{"key":"PAYR-5808","status":"Delivered","done":true,"created":"2026-03-25T16:00:05","resolved":"2026-03-31T14:19:34","country":"UK","category":null,"first_comment":"2026-03-25T16:00:07"},{"key":"PAYR-5807","status":"Pending","done":false,"created":"2026-03-25T15:26:32","resolved":null,"country":"France","category":null,"first_comment":"2026-03-30T15:25:26"},{"key":"PAYR-5806","status":"Delivered","done":true,"created":"2026-03-25T13:25:29","resolved":"2026-03-25T14:19:20","country":"Germany","category":"Payslip","first_comment":"2026-03-25T14:19:03"},{"key":"PAYR-5805","status":"Delivered","done":true,"created":"2026-03-25T13:06:31","resolved":"2026-03-25T14:56:40","country":"Germany","category":"Absence/Overtime/OB/Referral/Bonus","first_comment":"2026-03-25T14:56:24"},{"key":"PAYR-5804","status":"Delivered","done":true,"created":"2026-03-25T10:06:15","resolved":"2026-03-25T11:15:56","country":"Germany","category":"Payroll Provider","first_comment":"2026-03-25T11:15:34"},{"key":"PAYR-5803","status":"Delivered","done":true,"created":"2026-03-25T09:46:15","resolved":"2026-04-02T15:44:33","country":"Belgium","category":null,"first_comment":"2026-03-25T09:46:17"}];
 
-const countryStats = {"UK":{"total":28,"avg_days":5.7,"open":1},"France":{"total":15,"avg_days":4.7,"open":4},"Sweden":{"total":15,"avg_days":10.1,"open":2},"Germany":{"total":14,"avg_days":0.8,"open":0},"Denmark":{"total":5,"avg_days":3.1,"open":1},"Poland":{"total":3,"avg_days":13.2,"open":2},"Spain":{"total":2,"avg_days":7.9,"open":1},"Belgium":{"total":2,"avg_days":8.6,"open":0},"Italy":{"total":2,"avg_days":7.8,"open":0},"Norway":{"total":2,"avg_days":5.6,"open":0},"Finland":{"total":1,"avg_days":0.2,"open":0},"Netherlands":{"total":1,"avg_days":null,"open":1},"Switzerland":{"total":1,"avg_days":3.4,"open":0}};
+const NOW = new Date('2026-04-17T23:59:59');
 
-const catStats = {"Fine / allowance":{"total":20,"avg_days":6.4,"open":1},"Other":{"total":20,"avg_days":8.3,"open":4},"Payslip / documents":{"total":15,"avg_days":6.7,"open":2},"Sick leave / absence":{"total":9,"avg_days":4.4,"open":1},"Pay advance":{"total":6,"avg_days":5.4,"open":0},"Absence/Overtime":{"total":5,"avg_days":0.9,"open":0},"System / access":{"total":4,"avg_days":5.7,"open":0},"Vacation / holiday":{"total":4,"avg_days":11.2,"open":1},"Salary change":{"total":3,"avg_days":3.6,"open":1},"Bank / payment":{"total":2,"avg_days":null,"open":2},"Salary error":{"total":1,"avg_days":14.1,"open":0}};
+function daysBetween(a, b) {
+  if (!a || !b) return null;
+  return Math.round(Math.abs(new Date(b) - new Date(a)) / 86400000 * 10) / 10;
+}
+function avg(arr) {
+  const v = arr.filter(x => x != null);
+  return v.length ? Math.round(v.reduce((s, x) => s + x, 0) / v.length * 10) / 10 : null;
+}
 
-// ── CHART DEFAULTS ────────────────────────────────────────────────────
-Chart.defaults.font.family = "'DM Sans', sans-serif";
-Chart.defaults.font.size = 11;
-Chart.defaults.color = '#6b6860';
+function getFiltered() {
+  const days = parseInt(document.getElementById('tf').value);
+  const cutoff = new Date(NOW - days * 86400000);
+  const country = document.getElementById('cf').value;
+  return RAW.filter(i => {
+    if (new Date(i.created) < cutoff) return false;
+    if (country !== 'all' && i.country !== country) return false;
+    return true;
+  });
+}
 
-// ── VOLUME CHART ──────────────────────────────────────────────────────
-const volLabels = Object.keys(daily).map(d => {
-  const parts = d.split('-');
-  return `${parts[2]}/${parts[1]}`;
-});
-const volData = Object.values(daily);
+let volInst = null, frtInst = null;
 
-new Chart(document.getElementById('volumeChart'), {
-  type: 'bar',
-  data: {
-    labels: volLabels,
-    datasets: [{
-      data: volData,
-      backgroundColor: volData.map(v => v >= 10 ? '#d45a2a' : v >= 7 ? '#b07a10' : '#2d4af0'),
-      borderRadius: 3,
-      borderSkipped: false,
-    }]
-  },
-  options: {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: { legend: { display: false }, tooltip: { callbacks: { title: (items) => `Date: ${Object.keys(daily)[items[0].dataIndex]}` } } },
-    scales: {
-      x: { grid: { display: false }, ticks: { maxRotation: 45, font: { size: 9 } } },
-      y: { grid: { color: '#e2e0d8' }, ticks: { stepSize: 2 } }
-    }
-  }
-});
+function render() {
+  const issues = getFiltered();
+  const open = issues.filter(i => !i.done);
+  const resTimes = issues.map(i => daysBetween(i.created, i.resolved)).filter(v => v != null);
+  const frtTimes = issues.map(i => daysBetween(i.created, i.first_comment)).filter(v => v != null);
+  const countries = new Set(issues.map(i => i.country).filter(Boolean));
 
-// ── STATUS DONUT ──────────────────────────────────────────────────────
-new Chart(document.getElementById('statusChart'), {
-  type: 'doughnut',
-  data: {
-    labels: ['Delivered', 'Work in progress', 'Pending', 'Reopened', 'Open'],
-    datasets: [{
-      data: [87, 5, 5, 1, 1],
-      backgroundColor: ['#1e8a5e', '#2d4af0', '#c8c4bc', '#d45a2a', '#b07a10'],
-      borderWidth: 2,
-      borderColor: '#ffffff',
-    }]
-  },
-  options: {
-    responsive: true,
-    maintainAspectRatio: false,
-    cutout: '65%',
-    plugins: {
-      legend: { display: false },
-      tooltip: { callbacks: { label: (item) => ` ${item.label}: ${item.raw}` } }
-    }
-  }
-});
+  document.getElementById('m0').textContent = issues.length;
+  document.getElementById('m1').textContent = open.length;
+  document.getElementById('m2').textContent = avg(resTimes) ?? '—';
+  document.getElementById('m3').textContent = avg(frtTimes) ?? '—';
+  document.getElementById('m4').textContent = countries.size;
 
-// ── CATEGORY PIE ──────────────────────────────────────────────────────
-const catNames = Object.keys(catStats);
-const catCounts = catNames.map(c => catStats[c].total);
-const pieColors = ['#2d4af0','#1e8a5e','#d45a2a','#b07a10','#7b5ea7','#2a8fb0','#b05a2a','#5a9e4a','#a04060','#4a6ea0','#c07a40'];
+  renderVol(issues);
+  renderCountry(issues);
+  renderCat(issues);
+  renderFrt(issues);
+}
 
-new Chart(document.getElementById('catPieChart'), {
-  type: 'doughnut',
-  data: {
-    labels: catNames,
-    datasets: [{
-      data: catCounts,
-      backgroundColor: pieColors,
-      borderWidth: 2,
-      borderColor: '#ffffff',
-    }]
-  },
-  options: {
-    responsive: true,
-    maintainAspectRatio: false,
-    cutout: '55%',
-    plugins: {
-      legend: { display: false },
-      tooltip: { callbacks: { label: (item) => ` ${item.label}: ${item.raw}` } }
-    }
-  }
-});
+function renderVol(issues) {
+  const daily = {};
+  issues.forEach(i => { const d = i.created.slice(0, 10); daily[d] = (daily[d] || 0) + 1; });
+  const labels = Object.keys(daily).sort();
+  const vals = labels.map(l => daily[l]);
+  const short = labels.map(l => { const p = l.split('-'); return `${p[2]}/${p[1]}`; });
+  if (volInst) volInst.destroy();
+  volInst = new Chart(document.getElementById('volC'), {
+    type: 'bar',
+    data: { labels: short, datasets: [{ data: vals, backgroundColor: vals.map(v => v >= 10 ? '#D85A30' : v >= 6 ? '#BA7517' : '#378ADD'), borderRadius: 3, borderSkipped: false }] },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false }, ticks: { maxRotation: 60, font: { size: 10 } } }, y: { grid: { color: 'rgba(0,0,0,0.05)' }, ticks: { stepSize: 1, font: { size: 10 } } } } }
+  });
+}
 
-// ── COUNTRY VOLUME BARS ───────────────────────────────────────────────
-const maxVol = 28;
-const countryVolumeEl = document.getElementById('countryVolume');
-const topCountries = Object.entries(countryStats).sort((a,b) => b[1].total - a[1].total);
-topCountries.forEach(([name, d]) => {
-  const pct = Math.round((d.total / maxVol) * 100);
-  const isTop = d.total >= 10;
-  countryVolumeEl.innerHTML += `
-    <div class="country-row">
-      <span class="country-name">${name}</span>
-      <div class="bar-wrap"><div class="bar-fill ${isTop ? '' : ''}" style="width:${pct}%; background:${isTop ? '#2d4af0' : '#a0a8e8'};"></div></div>
-      <span class="country-count">${d.total}</span>
+function renderCountry(issues) {
+  const stats = {};
+  issues.forEach(i => {
+    const c = i.country || 'Unknown';
+    if (!stats[c]) stats[c] = { total: 0, res: [], frt: [], open: 0 };
+    stats[c].total++;
+    const r = daysBetween(i.created, i.resolved); if (r != null) stats[c].res.push(r);
+    const f = daysBetween(i.created, i.first_comment); if (f != null) stats[c].frt.push(f);
+    if (!i.done) stats[c].open++;
+  });
+  const sorted = Object.entries(stats).sort((a, b) => b[1].total - a[1].total).slice(0, 10);
+  const maxT = sorted[0]?.[1].total || 1;
+  document.getElementById('cBars').innerHTML = sorted.map(([n, d]) => {
+    const pct = Math.round(d.total / maxT * 100);
+    const ar = avg(d.res), af = avg(d.frt);
+    const slow = ar != null && ar > 9;
+    return `<div class="bar-row">
+      <span class="bar-label" title="${n}">${n}</span>
+      <div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${slow ? '#D85A30' : '#378ADD'}"></div></div>
+      <span class="bar-count">${d.total}</span>
+      <span class="bar-meta">res:${ar ?? '—'}d frt:${af ?? '—'}d</span>
+      ${d.open ? `<span class="pill pill-open">${d.open} open</span>` : ''}
+      ${slow ? `<span class="pill pill-slow">slow</span>` : ''}
     </div>`;
-});
+  }).join('');
+}
 
-// ── COUNTRY RESOLUTION BARS ───────────────────────────────────────────
-const maxRes = 13.2;
-const countryResEl = document.getElementById('countryResolution');
-const resCountries = Object.entries(countryStats)
-  .filter(([,d]) => d.avg_days !== null && d.total >= 2)
-  .sort((a,b) => b[1].avg_days - a[1].avg_days);
-
-resCountries.forEach(([name, d]) => {
-  const pct = Math.round((d.avg_days / maxRes) * 100);
-  let color = '#1e8a5e';
-  if (d.avg_days > 9) color = '#d45a2a';
-  else if (d.avg_days > 6) color = '#b07a10';
-  countryResEl.innerHTML += `
-    <div class="res-row">
-      <span>${name}</span>
-      <div class="res-bar-wrap"><div class="res-bar" style="width:${pct}%; background:${color};"></div></div>
-      <span class="res-days">${d.avg_days}d</span>
-      <span>${d.open > 0 ? `<span class='pill pill-open'>${d.open} open</span>` : '<span class="pill pill-fast">✓ clear</span>'}</span>
+function renderCat(issues) {
+  const stats = {};
+  issues.forEach(i => {
+    const c = i.category || 'Uncategorised';
+    if (!stats[c]) stats[c] = { total: 0, res: [], open: 0 };
+    stats[c].total++;
+    const r = daysBetween(i.created, i.resolved); if (r != null) stats[c].res.push(r);
+    if (!i.done) stats[c].open++;
+  });
+  const sorted = Object.entries(stats).sort((a, b) => b[1].total - a[1].total);
+  const maxT = sorted[0]?.[1].total || 1;
+  document.getElementById('catBars').innerHTML = sorted.map(([n, d]) => {
+    const pct = Math.round(d.total / maxT * 100);
+    const ar = avg(d.res);
+    return `<div class="bar-row">
+      <span class="bar-label" title="${n}">${n}</span>
+      <div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:#378ADD"></div></div>
+      <span class="bar-count">${d.total}</span>
+      <span class="bar-meta">${ar ?? '—'}d avg res</span>
+      ${d.open ? `<span class="pill pill-open">${d.open} open</span>` : ''}
     </div>`;
-});
+  }).join('');
+}
 
-// ── CATEGORY ROWS ─────────────────────────────────────────────────────
-const maxCatVol = 20;
-const maxCatDays = 14.1;
-const catRowsEl = document.getElementById('categoryRows');
-const sortedCats = Object.entries(catStats).sort((a,b) => b[1].total - a[1].total);
+function renderFrt(issues) {
+  const stats = {};
+  issues.forEach(i => {
+    const c = i.country || 'Unknown';
+    if (!stats[c]) stats[c] = { res: [], frt: [], total: 0 };
+    stats[c].total++;
+    const r = daysBetween(i.created, i.resolved); if (r != null) stats[c].res.push(r);
+    const f = daysBetween(i.created, i.first_comment); if (f != null) stats[c].frt.push(f);
+  });
+  const pts = Object.entries(stats).filter(([, d]) => d.total >= 2).map(([n, d]) => ({ name: n, x: avg(d.frt) ?? 0, y: avg(d.res) ?? 0, r: Math.max(4, d.total * 1.8) }));
+  if (frtInst) frtInst.destroy();
+  frtInst = new Chart(document.getElementById('frtC'), {
+    type: 'bubble',
+    data: { datasets: [{ data: pts.map(p => ({ x: p.x, y: p.y, r: p.r, name: p.name })), backgroundColor: 'rgba(55,138,221,0.45)', borderColor: '#185FA5', borderWidth: 1 }] },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => `${ctx.raw.name}: frt=${ctx.raw.x}d res=${ctx.raw.y}d` } } }, scales: { x: { title: { display: true, text: '1st response (days)', font: { size: 11 } }, grid: { color: 'rgba(0,0,0,0.05)' } }, y: { title: { display: true, text: 'Resolution (days)', font: { size: 11 } }, grid: { color: 'rgba(0,0,0,0.05)' } } } }
+  });
+}
 
-sortedCats.forEach(([name, d]) => {
-  const volPct = Math.round((d.total / maxCatVol) * 100);
-  const daysLabel = d.avg_days !== null ? `${d.avg_days}d` : '—';
-  let speedPill = '';
-  if (d.open > 0 && d.avg_days === null) speedPill = `<span class="pill pill-blocked">blocked</span>`;
-  else if (d.open > 0) speedPill = `<span class="pill pill-open">${d.open} open</span>`;
-  else if (d.avg_days !== null && d.avg_days < 2) speedPill = `<span class="pill pill-fast">fast</span>`;
-  else if (d.avg_days !== null && d.avg_days > 10) speedPill = `<span class="pill pill-slow">slow</span>`;
-  else speedPill = `<span class="pill pill-delivered">ok</span>`;
+function buildSummary() {
+  const issues = getFiltered();
+  const country = document.getElementById('cf').value;
+  const days = document.getElementById('tf').value;
+  const open = issues.filter(i => !i.done);
+  const resTimes = issues.map(i => daysBetween(i.created, i.resolved)).filter(v => v != null);
+  const frtTimes = issues.map(i => daysBetween(i.created, i.first_comment)).filter(v => v != null);
+  const cStats = {};
+  issues.forEach(i => {
+    const c = i.country || 'Unknown';
+    if (!cStats[c]) cStats[c] = { total: 0, res: [], frt: [], open: 0 };
+    cStats[c].total++;
+    const r = daysBetween(i.created, i.resolved); if (r != null) cStats[c].res.push(r);
+    const f = daysBetween(i.created, i.first_comment); if (f != null) cStats[c].frt.push(f);
+    if (!i.done) cStats[c].open++;
+  });
+  const catStats = {};
+  issues.forEach(i => {
+    const c = i.category || 'Uncategorised';
+    if (!catStats[c]) catStats[c] = { total: 0, res: [] };
+    catStats[c].total++;
+    const r = daysBetween(i.created, i.resolved); if (r != null) catStats[c].res.push(r);
+  });
+  const cLines = Object.entries(cStats).sort((a, b) => b[1].total - a[1].total).map(([n, d]) => `${n}: ${d.total} tickets, res ${avg(d.res) ?? 'n/a'}d, frt ${avg(d.frt) ?? 'n/a'}d, ${d.open} open`).join('\n');
+  const catLines = Object.entries(catStats).sort((a, b) => b[1].total - a[1].total).map(([n, d]) => `${n}: ${d.total} tickets, avg res ${avg(d.res) ?? 'n/a'}d`).join('\n');
+  return `View: ${country === 'all' ? 'all countries' : country}, last ${days} days. Total: ${issues.length} tickets, ${open.length} open. Avg resolution: ${avg(resTimes) ?? 'n/a'}d, avg 1st response: ${avg(frtTimes) ?? 'n/a'}d.\n\nBy country:\n${cLines}\n\nBy category:\n${catLines}`;
+}
 
-  catRowsEl.innerHTML += `
-    <div class="cat-row">
-      <span class="cat-name">${name}</span>
-      <div class="cat-bar-wrap"><div class="cat-bar" style="width:${volPct}%;"></div></div>
-      <span class="cat-days">${daysLabel}</span>
-      <span class="cat-count">${d.total}</span>
-      <span>${speedPill}</span>
-    </div>`;
-});
+async function runAI() {
+  const key = document.getElementById('apiKey').value.trim();
+  if (!key) { document.getElementById('aiOut').textContent = 'Please enter your Anthropic API key above.'; return; }
+  const btn = document.querySelector('.ai-btn');
+  const out = document.getElementById('aiOut');
+  btn.disabled = true;
+  out.className = 'ai-content loading';
+  out.textContent = 'Analysing...';
+  try {
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        messages: [{ role: 'user', content: `You are a payroll operations analyst. Analyse this service desk data and write 3-5 short paragraphs with clear, actionable insights. Focus on bottlenecks, slow countries, category patterns, and what to prioritise. Be specific with numbers. No bullet points.\n\n${buildSummary()}` }]
+      })
+    });
+    const data = await resp.json();
+    if (data.error) throw new Error(data.error.message);
+    const text = data.content?.find(b => b.type === 'text')?.text || 'No response.';
+    out.className = 'ai-content';
+    out.textContent = text;
+  } catch (e) {
+    out.className = 'ai-content';
+    out.textContent = 'Error: ' + e.message;
+  }
+  btn.disabled = false;
+}
+
+const countries = [...new Set(RAW.map(i => i.country).filter(Boolean))].sort();
+const sel = document.getElementById('cf');
+countries.forEach(c => { const o = document.createElement('option'); o.value = c; o.textContent = c; sel.appendChild(o); });
+
+document.getElementById('tf').addEventListener('change', render);
+document.getElementById('cf').addEventListener('change', render);
+
+render();
 </script>
 </body>
 </html>
